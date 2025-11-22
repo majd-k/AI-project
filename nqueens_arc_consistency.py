@@ -112,17 +112,63 @@ class AC3_Solver:
             "time": elapsed
         }
 
+if __name__ == "__main__":
+    print("\n" + "-"*70)
+    print("N-QUEENS: Backtracking + AC3")
+    print("-"*70)
 
+    test_values = [4, 6, 8, 10]
 
-TESTS = [4, 6, 8, 10]
+    for n in test_values:
+        print(f"\nTesting N = {n}")
+        solver = AC3_Solver(n)
+        results = solver.solve()
 
-for N in TESTS:
-    print("\n==========================")
-    print(f"       N = {N}")
-    print("==========================")
+        print(f"Solutions: {results['solutions']}")
+        print(f"Node expansions: {results['node_expansions']}")
+        print(f"Checks: {results['checks']}")
+        print(f"Time: {results['time']:.6f} sec")
 
-    # AC-3
-    ac = AC3_Solver(N)
-    r = ac.solve()
-    print(f"AC3+MRV: \n solutions={r['solutions']} \n expansions={r['node_expansions']} \n checks={r['checks']} \n time={r['time']:.4f}s")
+   
+        if results["solutions"] > 0:
+            print("\nFirst solution:")
+            sol = {}
+            domains = solver.initial_domains()
+            solver.ac3(domains)
 
+            def get_first(dom, assigned):
+                if len(assigned) == n:
+                    return assigned
+                var = solver.MRV(dom, assigned)
+                for val in sorted(dom[var]):
+                    new_d = {v: set(dom[v]) for v in dom}
+                    new_d[var] = {val}
+                    ok = True
+                    for other in range(n):
+                        if other == var: continue
+                        if val in new_d[other]:
+                            new_d[other].remove(val)
+                        d1 = val + (other - var)
+                        d2 = val - (other - var)
+                        if d1 in new_d[other]:
+                            new_d[other].remove(d1)
+                        if d2 in new_d[other]:
+                            new_d[other].remove(d2)
+                        if len(new_d[other]) == 0:
+                            ok = False
+                            break
+                    if not ok: continue
+                    if solver.ac3(new_d):
+                        assigned[var] = val
+                        res = get_first(new_d, assigned)
+                        if res: return res
+                        del assigned[var]
+                return None
+
+            sol = get_first(domains, {})
+            board = [sol[r] for r in range(n)]
+            for r in range(n):
+                print(" ".join("Q" if board[r] == c else "." for c in range(n)))
+
+        else:
+            print("No solution found.")
